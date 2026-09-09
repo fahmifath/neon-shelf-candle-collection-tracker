@@ -1,338 +1,79 @@
 import {validate,hasErrors,filterItems,formatDate,createCandle,VIEWS,type Candle,type CandleInput,type BurnStatus,type View} from "./domain.js";
 import {load,save} from "./storage.js";
-
-let items: Candle[] = [];
-let currentView: View = "shelf";
-let searchQuery = "";
-let statusFilter = "";
-let editingId: string | null = null;
-let currentRating: number | null = null;
-let armedDeleteId: string | null = null;
-let armedDeleteTimer: ReturnType<typeof setTimeout> | null = null;
-
-const $ = (id: string) => document.getElementById(id)!;
-
-function announce(msg: string): void {
-  const el = $("announce");
-  el.textContent = "";
-  requestAnimationFrame(() => { el.textContent = msg; });
-}
-
-function reportFailure(message: string): void {
-  const banner = $("storage-banner");
-  banner.hidden = false;
-  requestAnimationFrame(() => { banner.textContent = message; });
-  announce(`Error: ${message}`);
-}
-
-function clearBanner(): void {
-  const b = $("storage-banner");
-  b.hidden = true;
-  b.textContent = "";
-}
-
-function mk(tag: string, cls?: string, txt?: string): HTMLElement {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (txt !== undefined) e.textContent = txt;
-  return e;
-}
-
-function mkBtn(cls: string, txt: string, action: string, id: string, label: string): HTMLButtonElement {
-  const b = mk("button", `btn ${cls}`) as HTMLButtonElement;
-  b.type = "button";
-  b.textContent = txt;
-  b.setAttribute("aria-label", label);
-  b.dataset.action = action;
-  b.dataset.id = id;
-  return b;
-}
-
-function statusLabel(s: BurnStatus): string {
-  return s === "unlit" ? "🕯 Unlit" : s === "burning" ? "🔥 Burning" : "✦ Finished";
-}
-
-function renderStars(r: number | null): string {
-  const n = r ?? 0;
-  return "★".repeat(n) + "☆".repeat(5 - n);
-}
-
-function labeledField(labelTxt: string, valTxt: string, ariaLabel: string): HTMLElement {
-  const p = mk("p", "card-field");
-  p.setAttribute("aria-label", ariaLabel);
-  p.appendChild(mk("span", "card-field-label", labelTxt));
-  p.appendChild(mk("span", "card-field-value", valTxt));
-  return p;
-}
-
-function createCard(c: Candle): HTMLElement {
-  const armed = armedDeleteId === c.id;
-  const card = mk("article", `candle-card status-${c.burnStatus}${c.burnStatus === "finished" ? " finished" : ""}`);
-  card.dataset.id = c.id;
-  card.appendChild(mk("span", `status-badge status-badge--${c.burnStatus}`, statusLabel(c.burnStatus)));
-  card.appendChild(mk("h3", "card-name", c.name));
-  card.appendChild(mk("p", "card-brand", c.brand));
-  card.appendChild(labeledField("Scent: ", c.scentNotes, `Scent notes: ${c.scentNotes}`));
-  card.appendChild(labeledField("Vessel: ", c.vesselStyle || "—", `Vessel: ${c.vesselStyle || "—"}`));
-  const stars = mk("p", "card-rating", renderStars(c.rating));
-  stars.setAttribute("aria-label", c.rating ? `Rating: ${c.rating} of 5` : "Unrated");
-  card.appendChild(stars);
-  card.appendChild(mk("p", "card-date", `Added ${formatDate(c.createdAt)}`));
-  const actions = mk("div", "card-actions");
-  if (c.view === "wishlist") actions.appendChild(mkBtn("btn-move", "Move to Shelf", "move", c.id, `Move "${c.name}" to shelf`));
-  actions.appendChild(mkBtn("btn-edit", "Edit", "edit", c.id, `Edit "${c.name}"`));
-  const delBtn = mkBtn(`btn-delete${armed ? " armed" : ""}`, armed ? "Confirm delete" : "Delete", "delete", c.id, armed ? `Confirm delete "${c.name}"` : `Delete "${c.name}"`);
-  actions.appendChild(delBtn);
-  card.appendChild(actions);
+let items:Candle[]=[],currentView:View="shelf",searchQuery="",statusFilter="",editingId:string|null=null,currentRating:number|null=null,armedId:string|null=null,armedTimer:ReturnType<typeof setTimeout>|null=null;
+const $=(id:string)=>document.getElementById(id)!;
+function announce(m:string){const e=$("announce");e.textContent="";requestAnimationFrame(()=>{e.textContent=m;});}
+function reportFailure(msg:string){const b=$("storage-banner");b.hidden=false;requestAnimationFrame(()=>{b.textContent=msg;});announce("Error: "+msg);}
+function clearBanner(){const b=$("storage-banner");b.hidden=true;b.textContent="";}
+function mk(t:string,c?:string,x?:string):HTMLElement{const e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e;}
+function btn(c:string,x:string,action:string,id:string,label:string):HTMLButtonElement{const b=mk("button","btn "+c) as HTMLButtonElement;b.type="button";b.textContent=x;b.setAttribute("aria-label",label);b.dataset.action=action;b.dataset.id=id;return b;}
+function statusLabel(s:BurnStatus){return s==="unlit"?"🕯 Unlit":s==="burning"?"🔥 Burning":"✦ Finished";}
+function stars(r:number|null){const n=r??0;return "★".repeat(n)+"☆".repeat(5-n);}
+function field(lbl:string,val:string,aria:string):HTMLElement{const p=mk("p","card-field");p.setAttribute("aria-label",aria);p.appendChild(mk("span","card-field-label",lbl));p.appendChild(mk("span","card-field-value",val));return p;}
+function createCard(c:Candle):HTMLElement{
+  const armed=armedId===c.id,card=mk("article","candle-card status-"+c.burnStatus+(c.burnStatus==="finished"?" finished":""));
+  card.dataset.id=c.id;
+  card.appendChild(mk("span","status-badge status-badge--"+c.burnStatus,statusLabel(c.burnStatus)));
+  card.appendChild(mk("h3","card-name",c.name));
+  card.appendChild(mk("p","card-brand",c.brand));
+  card.appendChild(field("Scent: ",c.scentNotes,"Scent notes: "+c.scentNotes));
+  card.appendChild(field("Vessel: ",c.vesselStyle||"—","Vessel: "+(c.vesselStyle||"—")));
+  const s=mk("p","card-rating",stars(c.rating));s.setAttribute("aria-label",c.rating?"Rating: "+c.rating+" of 5":"Unrated");
+  card.appendChild(s);
+  card.appendChild(mk("p","card-date","Added "+formatDate(c.createdAt)));
+  const acts=mk("div","card-actions");
+  if(c.view==="wishlist")acts.appendChild(btn("btn-move","Move to Shelf","move",c.id,`Move "${c.name}" to shelf`));
+  acts.appendChild(btn("btn-edit","Edit","edit",c.id,`Edit "${c.name}"`));
+  acts.appendChild(btn("btn-delete"+(armed?" armed":""),armed?"Confirm delete":"Delete","delete",c.id,(armed?`Confirm delete `:` Delete "`)+(armed?`"${c.name}"`:`${c.name}"`)));
+  card.appendChild(acts);
   return card;
 }
-
-function updateStats(): void {
-  $("stat-owned").textContent = String(items.filter(c => c.view === "shelf").length);
-  $("stat-burned").textContent = String(items.filter(c => c.burnStatus === "finished").length);
-  $("stat-wishlist").textContent = String(items.filter(c => c.view === "wishlist").length);
+function updateStats(){$("stat-owned").textContent=String(items.filter(c=>c.view==="shelf").length);$("stat-burned").textContent=String(items.filter(c=>c.burnStatus==="finished").length);$("stat-wishlist").textContent=String(items.filter(c=>c.view==="wishlist").length);}
+function render(){
+  const grid=$("candle-grid"),ec=$("empty-collection"),ef=$("empty-filter");
+  grid.innerHTML="";ec.hidden=true;ef.hidden=true;updateStats();
+  const viewItems=items.filter(c=>c.view===currentView),filtered=filterItems(viewItems,searchQuery,statusFilter);
+  if(viewItems.length===0){ec.hidden=false;$("empty-collection-body").textContent=currentView==="shelf"?"Add your first candle to start building your collection.":"Add candles to your wish list to track what you want to buy.";return;}
+  if(filtered.length===0){ef.hidden=false;const p:string[]=[];if(searchQuery)p.push(`"${searchQuery}"`);if(statusFilter)p.push(`status "${statusFilter}"`);const d=p.join(" and ");$("empty-filter-body").textContent="No candles match "+d+".";announce("No candles found for "+d+".");return;}
+  filtered.forEach(c=>grid.appendChild(createCard(c)));
 }
-
-function render(): void {
-  const grid = $("candle-grid");
-  const emptyC = $("empty-collection");
-  const emptyF = $("empty-filter");
-  grid.innerHTML = "";
-  emptyC.hidden = true;
-  emptyF.hidden = true;
-  updateStats();
-  const viewItems = items.filter(c => c.view === currentView);
-  const filtered = filterItems(viewItems, searchQuery, statusFilter);
-  if (viewItems.length === 0) {
-    emptyC.hidden = false;
-    $("empty-collection-body").textContent = currentView === "shelf"
-      ? "Add your first candle to start building your collection."
-      : "Add candles to your wish list to track what you want to buy.";
-    return;
-  }
-  if (filtered.length === 0) {
-    emptyF.hidden = false;
-    const parts: string[] = [];
-    if (searchQuery) parts.push(`"${searchQuery}"`);
-    if (statusFilter) parts.push(`status "${statusFilter}"`);
-    const desc = parts.join(" and ");
-    $("empty-filter-body").textContent = `No candles match ${desc}.`;
-    announce(`No candles found for ${desc}.`);
-    return;
-  }
-  filtered.forEach(c => grid.appendChild(createCard(c)));
-}
-
-function clearErrors(): void {
-  ["name","brand","scent","vessel","status"].forEach(f => {
-    const errEl = $(`err-${f}`);
-    errEl.hidden = true;
-    errEl.textContent = "";
-    const iid = f === "scent" ? "field-scent" : f === "status" ? "field-status" : `field-${f}`;
-    document.getElementById(iid)?.removeAttribute("aria-invalid");
-  });
-}
-
-const FIELD_MAP: Record<string, [string, string]> = {
-  name: ["err-name","field-name"], brand: ["err-brand","field-brand"],
-  scentNotes: ["err-scent","field-scent"], vesselStyle: ["err-vessel","field-vessel"],
-  burnStatus: ["err-status","field-status"]
-};
-
-function showFieldError(field: string, message: string): void {
-  const [errId, inputId] = FIELD_MAP[field] ?? [`err-${field}`, `field-${field}`];
-  const errEl = document.getElementById(errId);
-  if (errEl) { errEl.hidden = false; errEl.textContent = message; }
-  document.getElementById(inputId)?.setAttribute("aria-invalid", "true");
-}
-
-function getFormInput(): CandleInput {
-  return {
-    name: ($("field-name") as HTMLInputElement).value,
-    brand: ($("field-brand") as HTMLInputElement).value,
-    scentNotes: ($("field-scent") as HTMLInputElement).value,
-    vesselStyle: ($("field-vessel") as HTMLInputElement).value,
-    burnStatus: ($("field-status") as HTMLSelectElement).value,
-    view: ($("field-view") as HTMLSelectElement).value,
-    rating: currentRating,
-  };
-}
-
-function updateStarUI(rating: number | null): void {
-  document.querySelectorAll<HTMLButtonElement>(".star-btn").forEach((btn, idx) => {
-    const active = rating !== null && idx < rating;
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-pressed", String(active));
-  });
-  ($("field-rating") as HTMLInputElement).value = rating !== null ? String(rating) : "";
-}
-
-function resetForm(): void {
-  ($("candle-form") as HTMLFormElement).reset();
-  currentRating = null;
-  editingId = null;
-  updateStarUI(null);
-  clearErrors();
-  $("btn-cancel-edit").hidden = true;
-  $("btn-add").textContent = "Add Candle";
-}
-
-function populateFormForEdit(c: Candle): void {
-  ($("field-name") as HTMLInputElement).value = c.name;
-  ($("field-brand") as HTMLInputElement).value = c.brand;
-  ($("field-scent") as HTMLInputElement).value = c.scentNotes;
-  ($("field-vessel") as HTMLInputElement).value = c.vesselStyle;
-  ($("field-status") as HTMLSelectElement).value = c.burnStatus;
-  ($("field-view") as HTMLSelectElement).value = c.view;
-  currentRating = c.rating;
-  updateStarUI(c.rating);
-  editingId = c.id;
-  $("btn-cancel-edit").hidden = false;
-  $("btn-add").textContent = "Save Changes";
-  $("field-name").focus();
-}
-
-function armDelete(id: string): void {
-  if (armedDeleteTimer) clearTimeout(armedDeleteTimer);
-  armedDeleteId = id;
-  render();
-  armedDeleteTimer = setTimeout(() => { armedDeleteId = null; armedDeleteTimer = null; render(); }, 3000);
-}
-
-function disarmDelete(): void {
-  if (armedDeleteTimer) { clearTimeout(armedDeleteTimer); armedDeleteTimer = null; }
-  armedDeleteId = null;
+function clearErrors(){["name","brand","scent","vessel","status"].forEach(f=>{const e=$("err-"+f);e.hidden=true;e.textContent="";const iid=f==="scent"?"field-scent":f==="status"?"field-status":"field-"+f;document.getElementById(iid)?.removeAttribute("aria-invalid");});}
+const FM:Record<string,[string,string]>={name:["err-name","field-name"],brand:["err-brand","field-brand"],scentNotes:["err-scent","field-scent"],vesselStyle:["err-vessel","field-vessel"],burnStatus:["err-status","field-status"]};
+function showErr(f:string,m:string){const[eid,iid]=FM[f]??["err-"+f,"field-"+f];const e=document.getElementById(eid);if(e){e.hidden=false;e.textContent=m;}document.getElementById(iid)?.setAttribute("aria-invalid","true");}
+function getInput():CandleInput{return{name:($("field-name") as HTMLInputElement).value,brand:($("field-brand") as HTMLInputElement).value,scentNotes:($("field-scent") as HTMLInputElement).value,vesselStyle:($("field-vessel") as HTMLInputElement).value,burnStatus:($("field-status") as HTMLSelectElement).value,view:($("field-view") as HTMLSelectElement).value,rating:currentRating};}
+function setStars(r:number|null){document.querySelectorAll<HTMLButtonElement>(".star-btn").forEach((b,i)=>{const a=r!==null&&i<r;b.classList.toggle("active",a);b.setAttribute("aria-pressed",String(a));});($("field-rating") as HTMLInputElement).value=r!==null?String(r):"";}
+function resetForm(){($("candle-form") as HTMLFormElement).reset();currentRating=null;editingId=null;setStars(null);clearErrors();$("btn-cancel-edit").hidden=true;$("btn-add").textContent="Add Candle";}
+function fillEdit(c:Candle){const set=(id:string,v:string)=>{(document.getElementById(id) as HTMLInputElement|HTMLSelectElement).value=v;};set("field-name",c.name);set("field-brand",c.brand);set("field-scent",c.scentNotes);set("field-vessel",c.vesselStyle);set("field-status",c.burnStatus);set("field-view",c.view);currentRating=c.rating;setStars(c.rating);editingId=c.id;$("btn-cancel-edit").hidden=false;$("btn-add").textContent="Save Changes";$("field-name").focus();}
+function armDelete(id:string){if(armedTimer)clearTimeout(armedTimer);armedId=id;render();armedTimer=setTimeout(()=>{armedId=null;armedTimer=null;render();},3000);}
+function disarm(){if(armedTimer){clearTimeout(armedTimer);armedTimer=null;}armedId=null;render();}
+function handleSubmit(e:Event){
+  e.preventDefault();clearErrors();clearBanner();
+  const input=getInput(),errors=validate(input);
+  if(hasErrors(errors)){const FM2:Record<string,string>={name:"name",brand:"brand",scentNotes:"scent",vesselStyle:"vessel",burnStatus:"status"};let first:string|null=null;Object.entries(errors).forEach(([f,m])=>{if(m){showErr(f,m);if(!first)first=FM2[f]??f;}});announce("Form errors: "+Object.values(errors).filter(Boolean).join(" "));if(first)document.getElementById("field-"+first)?.focus();return;}
+  if(editingId){const idx=items.findIndex(c=>c.id===editingId);if(idx===-1){reportFailure("Could not find candle to edit.");return;}const up=createCandle(input,editingId,items[idx].createdAt),next=items.map((c,i)=>i===idx?up:c),r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${up.name}" updated.`);resetForm();}
+  else{const id=Date.now()+"-"+Math.random().toString(36).slice(2,7),nc=createCandle(input,id,new Date().toISOString()),next=[...items,nc],r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${nc.name}" added to ${nc.view==="shelf"?"your shelf":"your wish list"}.`);resetForm();}
   render();
 }
-
-function handleFormSubmit(e: Event): void {
-  e.preventDefault();
-  clearErrors();
-  clearBanner();
-  const input = getFormInput();
-  const errors = validate(input);
-  if (hasErrors(errors)) {
-    const fieldKeys: Record<string, string> = {name:"name",brand:"brand",scentNotes:"scent",vesselStyle:"vessel",burnStatus:"status"};
-    let first: string | null = null;
-    Object.entries(errors).forEach(([f, msg]) => {
-      if (msg) { showFieldError(f, msg); if (!first) first = fieldKeys[f] ?? f; }
-    });
-    announce(`Form errors: ${Object.values(errors).filter(Boolean).join(" ")}`);
-    if (first) document.getElementById(`field-${first}`)?.focus();
-    return;
-  }
-  if (editingId) {
-    const idx = items.findIndex(c => c.id === editingId);
-    if (idx === -1) { reportFailure("Could not find candle to edit."); return; }
-    const updated = createCandle(input, editingId, items[idx].createdAt);
-    const next = items.map((c, i) => i === idx ? updated : c);
-    const result = save(next);
-    if (!result.ok) { reportFailure(result.message); return; }
-    items = next;
-    announce(`"${updated.name}" updated.`);
-    resetForm();
-  } else {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const newCandle = createCandle(input, id, new Date().toISOString());
-    const next = [...items, newCandle];
-    const result = save(next);
-    if (!result.ok) { reportFailure(result.message); return; }
-    items = next;
-    announce(`"${newCandle.name}" added to ${newCandle.view === "shelf" ? "your shelf" : "your wish list"}.`);
-    resetForm();
-  }
+function handleGrid(e:Event){
+  const b=(e.target as HTMLElement).closest("[data-action]") as HTMLElement|null;if(!b)return;
+  const{action,id}=b.dataset;if(!id)return;clearBanner();
+  if(action==="delete"){if(armedId===id){if(armedTimer)clearTimeout(armedTimer);armedTimer=null;armedId=null;const c=items.find(c=>c.id===id),next=items.filter(c=>c.id!==id),r=save(next);if(!r.ok){reportFailure(r.message);render();return;}items=next;announce(`"${c?.name??"Candle"}" deleted.`);if(editingId===id)resetForm();render();}else{disarm();armDelete(id);}}
+  else if(action==="edit"){const c=items.find(c=>c.id===id);if(c){disarm();fillEdit(c);}}
+  else if(action==="move"){const i=items.findIndex(c=>c.id===id);if(i===-1)return;const mv={...items[i],view:"shelf" as View},next=items.map((c,j)=>j===i?mv:c),r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${mv.name}" moved to your shelf.`);render();}
+}
+function init(){
+  const result=load();
+  switch(result.status){case "ok":items=result.items;break;case "empty":items=[];break;case "partial":items=result.items;reportFailure(result.message);break;case "error":items=[];reportFailure(result.message);break;}
   render();
+  $("candle-form").addEventListener("submit",handleSubmit);
+  $("candle-grid").addEventListener("click",handleGrid);
+  $("rating-input-group").addEventListener("click",e=>{const b=(e.target as HTMLElement).closest(".star-btn") as HTMLButtonElement|null;if(!b)return;const v=Number(b.dataset.value);currentRating=currentRating===v?null:v;setStars(currentRating);});
+  document.querySelector(".view-toggle")!.addEventListener("click",e=>{const b=(e.target as HTMLElement).closest("[data-view]") as HTMLElement|null;if(!b)return;const v=b.dataset.view as View;if(!VIEWS.includes(v))return;currentView=v;disarm();document.querySelectorAll<HTMLButtonElement>(".toggle-btn").forEach(x=>{const a=x.dataset.view===v;x.classList.toggle("active",a);x.setAttribute("aria-pressed",String(a));});render();});
+  $("search-input").addEventListener("input",e=>{searchQuery=(e.target as HTMLInputElement).value;disarm();render();});
+  $("filter-status").addEventListener("change",e=>{statusFilter=(e.target as HTMLSelectElement).value;disarm();render();});
+  $("btn-clear-filters").addEventListener("click",()=>{($("search-input") as HTMLInputElement).value="";($("filter-status") as HTMLSelectElement).value="";searchQuery="";statusFilter="";render();});
+  $("btn-cancel-edit").addEventListener("click",resetForm);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&armedId)disarm();});
+  document.addEventListener("click",e=>{if(armedId&&!(e.target as HTMLElement).closest("[data-action='delete']"))disarm();});
 }
-
-function handleGridClick(e: Event): void {
-  const btn = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
-  if (!btn) return;
-  const {action, id} = btn.dataset;
-  if (!id) return;
-  clearBanner();
-  if (action === "delete") {
-    if (armedDeleteId === id) {
-      if (armedDeleteTimer) clearTimeout(armedDeleteTimer);
-      armedDeleteTimer = null;
-      armedDeleteId = null;
-      const candle = items.find(c => c.id === id);
-      const next = items.filter(c => c.id !== id);
-      const result = save(next);
-      if (!result.ok) { reportFailure(result.message); render(); return; }
-      items = next;
-      announce(`"${candle?.name ?? "Candle"}" deleted.`);
-      if (editingId === id) resetForm();
-      render();
-    } else {
-      disarmDelete();
-      armDelete(id);
-    }
-  } else if (action === "edit") {
-    const c = items.find(c => c.id === id);
-    if (c) { disarmDelete(); populateFormForEdit(c); }
-  } else if (action === "move") {
-    const idx = items.findIndex(c => c.id === id);
-    if (idx === -1) return;
-    const moved = {...items[idx], view: "shelf" as View};
-    const next = items.map((c, i) => i === idx ? moved : c);
-    const result = save(next);
-    if (!result.ok) { reportFailure(result.message); return; }
-    items = next;
-    announce(`"${moved.name}" moved to your shelf.`);
-    render();
-  }
-}
-
-function handleStarClick(e: Event): void {
-  const btn = (e.target as HTMLElement).closest(".star-btn") as HTMLButtonElement | null;
-  if (!btn) return;
-  const value = Number(btn.dataset.value);
-  currentRating = currentRating === value ? null : value;
-  updateStarUI(currentRating);
-}
-
-function handleViewToggle(e: Event): void {
-  const btn = (e.target as HTMLElement).closest("[data-view]") as HTMLElement | null;
-  if (!btn) return;
-  const view = btn.dataset.view as View;
-  if (!VIEWS.includes(view)) return;
-  currentView = view;
-  disarmDelete();
-  document.querySelectorAll<HTMLButtonElement>(".toggle-btn").forEach(b => {
-    const active = b.dataset.view === view;
-    b.classList.toggle("active", active);
-    b.setAttribute("aria-pressed", String(active));
-  });
-  render();
-}
-
-function handleClearFilters(): void {
-  ($("search-input") as HTMLInputElement).value = "";
-  ($("filter-status") as HTMLSelectElement).value = "";
-  searchQuery = "";
-  statusFilter = "";
-  render();
-}
-
-function init(): void {
-  const result = load();
-  switch (result.status) {
-    case "ok": items = result.items; break;
-    case "empty": items = []; break;
-    case "partial": items = result.items; reportFailure(result.message); break;
-    case "error": items = []; reportFailure(result.message); break;
-  }
-  render();
-  $("candle-form").addEventListener("submit", handleFormSubmit);
-  $("candle-grid").addEventListener("click", handleGridClick);
-  $("rating-input-group").addEventListener("click", handleStarClick);
-  document.querySelector(".view-toggle")!.addEventListener("click", handleViewToggle);
-  $("search-input").addEventListener("input", (e) => { searchQuery = (e.target as HTMLInputElement).value; disarmDelete(); render(); });
-  $("filter-status").addEventListener("change", (e) => { statusFilter = (e.target as HTMLSelectElement).value; disarmDelete(); render(); });
-  $("btn-clear-filters").addEventListener("click", handleClearFilters);
-  $("btn-cancel-edit").addEventListener("click", resetForm);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && armedDeleteId) disarmDelete(); });
-  document.addEventListener("click", (e) => { if (armedDeleteId && !(e.target as HTMLElement).closest("[data-action='delete']")) disarmDelete(); });
-}
-
 init();
