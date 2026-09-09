@@ -24,7 +24,7 @@ function createCard(c:Candle):HTMLElement{
   const acts=mk("div","card-actions");
   if(c.view==="wishlist")acts.appendChild(btn("btn-move","Move to Shelf","move",c.id,`Move "${c.name}" to shelf`));
   acts.appendChild(btn("btn-edit","Edit","edit",c.id,`Edit "${c.name}"`));
-  acts.appendChild(btn("btn-delete"+(armed?" armed":""),armed?"Confirm delete":"Delete","delete",c.id,(armed?`Confirm delete `:` Delete "`)+(armed?`"${c.name}"`:`${c.name}"`)));
+  acts.appendChild(btn("btn-delete"+(armed?" armed":""),armed?"Confirm delete":"Delete","delete",c.id,armed?`Confirm delete "${c.name}"`:`Delete "${c.name}"`));
   card.appendChild(acts);
   return card;
 }
@@ -37,19 +37,21 @@ function render(){
   if(filtered.length===0){ef.hidden=false;const p:string[]=[];if(searchQuery)p.push(`"${searchQuery}"`);if(statusFilter)p.push(`status "${statusFilter}"`);const d=p.join(" and ");$("empty-filter-body").textContent="No candles match "+d+".";announce("No candles found for "+d+".");return;}
   filtered.forEach(c=>grid.appendChild(createCard(c)));
 }
+const FMAP:Record<string,string>={name:"name",brand:"brand",scentNotes:"scent",vesselStyle:"vessel",burnStatus:"status"};
 function clearErrors(){["name","brand","scent","vessel","status"].forEach(f=>{const e=$("err-"+f);e.hidden=true;e.textContent="";const iid=f==="scent"?"field-scent":f==="status"?"field-status":"field-"+f;document.getElementById(iid)?.removeAttribute("aria-invalid");});}
-const FM:Record<string,[string,string]>={name:["err-name","field-name"],brand:["err-brand","field-brand"],scentNotes:["err-scent","field-scent"],vesselStyle:["err-vessel","field-vessel"],burnStatus:["err-status","field-status"]};
-function showErr(f:string,m:string){const[eid,iid]=FM[f]??["err-"+f,"field-"+f];const e=document.getElementById(eid);if(e){e.hidden=false;e.textContent=m;}document.getElementById(iid)?.setAttribute("aria-invalid","true");}
-function getInput():CandleInput{return{name:($("field-name") as HTMLInputElement).value,brand:($("field-brand") as HTMLInputElement).value,scentNotes:($("field-scent") as HTMLInputElement).value,vesselStyle:($("field-vessel") as HTMLInputElement).value,burnStatus:($("field-status") as HTMLSelectElement).value,view:($("field-view") as HTMLSelectElement).value,rating:currentRating};}
+function showErr(f:string,m:string){const k=FMAP[f]||f,e=$("err-"+k);if(e){e.hidden=false;e.textContent=m;}document.getElementById("field-"+k)?.setAttribute("aria-invalid","true");}
+const $val=(id:string)=>(document.getElementById(id) as HTMLInputElement|HTMLSelectElement).value;
+const setVal=(id:string,v:string)=>{(document.getElementById(id) as HTMLInputElement|HTMLSelectElement).value=v;};
+function getInput():CandleInput{return{name:$val("field-name"),brand:$val("field-brand"),scentNotes:$val("field-scent"),vesselStyle:$val("field-vessel"),burnStatus:$val("field-status"),view:$val("field-view"),rating:currentRating};}
 function setStars(r:number|null){document.querySelectorAll<HTMLButtonElement>(".star-btn").forEach((b,i)=>{const a=r!==null&&i<r;b.classList.toggle("active",a);b.setAttribute("aria-pressed",String(a));});($("field-rating") as HTMLInputElement).value=r!==null?String(r):"";}
 function resetForm(){($("candle-form") as HTMLFormElement).reset();currentRating=null;editingId=null;setStars(null);clearErrors();$("btn-cancel-edit").hidden=true;$("btn-add").textContent="Add Candle";}
-function fillEdit(c:Candle){const set=(id:string,v:string)=>{(document.getElementById(id) as HTMLInputElement|HTMLSelectElement).value=v;};set("field-name",c.name);set("field-brand",c.brand);set("field-scent",c.scentNotes);set("field-vessel",c.vesselStyle);set("field-status",c.burnStatus);set("field-view",c.view);currentRating=c.rating;setStars(c.rating);editingId=c.id;$("btn-cancel-edit").hidden=false;$("btn-add").textContent="Save Changes";$("field-name").focus();}
+function fillEdit(c:Candle){setVal("field-name",c.name);setVal("field-brand",c.brand);setVal("field-scent",c.scentNotes);setVal("field-vessel",c.vesselStyle);setVal("field-status",c.burnStatus);setVal("field-view",c.view);currentRating=c.rating;setStars(c.rating);editingId=c.id;$("btn-cancel-edit").hidden=false;$("btn-add").textContent="Save Changes";$("field-name").focus();}
 function armDelete(id:string){if(armedTimer)clearTimeout(armedTimer);armedId=id;render();armedTimer=setTimeout(()=>{armedId=null;armedTimer=null;render();},3000);}
 function disarm(){if(armedTimer){clearTimeout(armedTimer);armedTimer=null;}armedId=null;render();}
 function handleSubmit(e:Event){
   e.preventDefault();clearErrors();clearBanner();
   const input=getInput(),errors=validate(input);
-  if(hasErrors(errors)){const FM2:Record<string,string>={name:"name",brand:"brand",scentNotes:"scent",vesselStyle:"vessel",burnStatus:"status"};let first:string|null=null;Object.entries(errors).forEach(([f,m])=>{if(m){showErr(f,m);if(!first)first=FM2[f]??f;}});announce("Form errors: "+Object.values(errors).filter(Boolean).join(" "));if(first)document.getElementById("field-"+first)?.focus();return;}
+  if(hasErrors(errors)){let first:string|null=null;Object.entries(errors).forEach(([f,m])=>{if(m){showErr(f,m);if(!first)first=FMAP[f]||f;}});announce("Form errors: "+Object.values(errors).filter(Boolean).join(" "));if(first)document.getElementById("field-"+first)?.focus();return;}
   if(editingId){const idx=items.findIndex(c=>c.id===editingId);if(idx===-1){reportFailure("Could not find candle to edit.");return;}const up=createCandle(input,editingId,items[idx].createdAt),next=items.map((c,i)=>i===idx?up:c),r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${up.name}" updated.`);resetForm();}
   else{const id=Date.now()+"-"+Math.random().toString(36).slice(2,7),nc=createCandle(input,id,new Date().toISOString()),next=[...items,nc],r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${nc.name}" added to ${nc.view==="shelf"?"your shelf":"your wish list"}.`);resetForm();}
   render();
