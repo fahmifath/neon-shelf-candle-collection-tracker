@@ -98,6 +98,7 @@ select { appearance: none; background-image: var(--arrow-svg); background-repeat
 .candle-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp4); }
 .candle-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--r-lg); padding: var(--sp5); position: relative; transition: var(--transition); animation: card-enter 250ms ease both; }
 .candle-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.candle-card.editing { border-color: var(--color-warm-amber); box-shadow: 0 0 0 2px var(--color-warm-amber), var(--shadow-md); }
 .candle-card.status-burning { border-color: color-mix(in oklab, var(--color-burning) 40%, var(--color-border)); box-shadow: 0 0 16px var(--color-burning-glow); }
 .candle-card.status-finished { opacity: 0.6; background: var(--color-finished-surface); border-color: var(--color-finished); }
 .candle-card.finished .card-name { text-decoration: line-through; color: var(--color-text-muted); }

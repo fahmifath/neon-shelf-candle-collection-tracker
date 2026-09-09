@@ -11,7 +11,7 @@ function statusLabel(s:BurnStatus){return s==="unlit"?"🕯 Unlit":s==="burning"
 function stars(r:number|null){const n=r??0;return "★".repeat(n)+"☆".repeat(5-n);}
 function field(lbl:string,val:string,aria:string):HTMLElement{const p=mk("p","card-field");p.setAttribute("aria-label",aria);p.appendChild(mk("span","card-field-label",lbl));p.appendChild(mk("span","card-field-value",val));return p;}
 function createCard(c:Candle):HTMLElement{
-  const armed=armedId===c.id,card=mk("article","candle-card status-"+c.burnStatus+(c.burnStatus==="finished"?" finished":""));
+  const armed=armedId===c.id,card=mk("article","candle-card status-"+c.burnStatus+(c.burnStatus==="finished"?" finished":"")+(editingId===c.id?" editing":""));
   card.dataset.id=c.id;
   card.appendChild(mk("span","status-badge status-badge--"+c.burnStatus,statusLabel(c.burnStatus)));
   card.appendChild(mk("h3","card-name",c.name));
@@ -31,16 +31,17 @@ function createCard(c:Candle):HTMLElement{
 }
 function updateStats(){
   let o=0,b=0,w=0;
-  for(const c of items){if(c.view==="shelf")o++;if(c.burnStatus==="finished")b++;if(c.view==="wishlist")w++;}
+  for(const c of items){if(c.view==="shelf"){o++;if(c.burnStatus==="finished")b++;}if(c.view==="wishlist")w++;}
   $("stat-owned").textContent=String(o);$("stat-burned").textContent=String(b);$("stat-wishlist").textContent=String(w);
 }
 function render(){
-  const grid=$("candle-grid"),ec=$("empty-collection"),ef=$("empty-filter");
+  const grid=$("candle-grid"),ec=$("empty-collection"),ef=$("empty-filter"),_fg=document.activeElement?.closest("#candle-grid")?(document.activeElement as HTMLElement):null,_fi=(_fg?.closest("[data-id]") as HTMLElement|null)?.dataset.id,_fa=_fg?.dataset.action;
   grid.innerHTML="";ec.hidden=true;ef.hidden=true;updateStats();
   const viewItems=items.filter(c=>c.view===currentView),filtered=filterItems(viewItems,searchQuery,statusFilter);
   if(viewItems.length===0){ec.hidden=false;$("empty-collection-body").textContent=currentView==="shelf"?"Add your first candle to start building your collection.":"Add candles to your wish list to track what you want to buy.";return;}
   if(filtered.length===0){ef.hidden=false;const p:string[]=[];if(searchQuery)p.push(`"${searchQuery}"`);if(statusFilter)p.push(`status "${statusFilter}"`);const d=p.join(" and ");$("empty-filter-body").textContent="No candles match "+d+".";announce("No candles found for "+d+".");return;}
   filtered.forEach(c=>grid.appendChild(createCard(c)));
+  if(_fi&&_fa)(grid.querySelector("[data-id='"+_fi+"'] [data-action='"+_fa+"']") as HTMLElement|null)?.focus();
 }
 const FMAP:Record<string,string>={name:"name",brand:"brand",scentNotes:"scent",vesselStyle:"vessel",burnStatus:"status"};
 function clearErrors(){["name","brand","scent","vessel","status"].forEach(f=>{const e=$("err-"+f);e.hidden=true;e.textContent="";const iid=f==="scent"?"field-scent":f==="status"?"field-status":"field-"+f;document.getElementById(iid)?.removeAttribute("aria-invalid");});}
@@ -58,7 +59,7 @@ function handleSubmit(e:Event){
   const input=getInput(),errors=validate(input);
   if(hasErrors(errors)){let first:string|null=null;Object.entries(errors).forEach(([f,m])=>{if(m){showErr(f,m);if(!first)first=FMAP[f]||f;}});announce("Form errors: "+Object.values(errors).filter(Boolean).join(" "));if(first)document.getElementById("field-"+first)?.focus();return;}
   if(editingId){const idx=items.findIndex(c=>c.id===editingId);if(idx===-1){reportFailure("Could not find candle to edit.");return;}const up=createCandle(input,editingId,items[idx].createdAt),next=items.map((c,i)=>i===idx?up:c),r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${up.name}" updated.`);resetForm();}
-  else{const id=Date.now()+"-"+Math.random().toString(36).slice(2,7),nc=createCandle(input,id,new Date().toISOString()),next=[...items,nc],r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${nc.name}" added to ${nc.view==="shelf"?"your shelf":"your wish list"}.`);resetForm();}
+  else{const id=Date.now()+"-"+Math.random().toString(36).slice(2,7),nc=createCandle(input,id,new Date().toISOString()),next=[...items,nc],r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${nc.name}" added to ${nc.view==="shelf"?"your shelf":"your wish list"}.`);resetForm();$("candle-grid").scrollIntoView({behavior:"smooth"});}
   render();
 }
 function handleGrid(e:Event){
