@@ -24,11 +24,16 @@ function createCard(c:Candle):HTMLElement{
   const acts=mk("div","card-actions");
   if(c.view==="wishlist")acts.appendChild(btn("btn-move","Move to Shelf","move",c.id,`Move "${c.name}" to shelf`));
   acts.appendChild(btn("btn-edit","Edit","edit",c.id,`Edit "${c.name}"`));
-  acts.appendChild(btn("btn-delete"+(armed?" armed":""),armed?"Confirm delete":"Delete","delete",c.id,armed?`Confirm delete "${c.name}"`:`Delete "${c.name}"`));
+  const delTxt=armed?"Confirm delete":"Delete";
+  acts.appendChild(btn("btn-delete"+(armed?" armed":""),delTxt,"delete",c.id,`${delTxt} "${c.name}"`));
   card.appendChild(acts);
   return card;
 }
-function updateStats(){$("stat-owned").textContent=String(items.filter(c=>c.view==="shelf").length);$("stat-burned").textContent=String(items.filter(c=>c.burnStatus==="finished").length);$("stat-wishlist").textContent=String(items.filter(c=>c.view==="wishlist").length);}
+function updateStats(){
+  let o=0,b=0,w=0;
+  for(const c of items){if(c.view==="shelf")o++;if(c.burnStatus==="finished")b++;if(c.view==="wishlist")w++;}
+  $("stat-owned").textContent=String(o);$("stat-burned").textContent=String(b);$("stat-wishlist").textContent=String(w);
+}
 function render(){
   const grid=$("candle-grid"),ec=$("empty-collection"),ef=$("empty-filter");
   grid.innerHTML="";ec.hidden=true;ef.hidden=true;updateStats();
@@ -59,7 +64,7 @@ function handleSubmit(e:Event){
 function handleGrid(e:Event){
   const b=(e.target as HTMLElement).closest("[data-action]") as HTMLElement|null;if(!b)return;
   const{action,id}=b.dataset;if(!id)return;clearBanner();
-  if(action==="delete"){if(armedId===id){if(armedTimer)clearTimeout(armedTimer);armedTimer=null;armedId=null;const c=items.find(c=>c.id===id),next=items.filter(c=>c.id!==id),r=save(next);if(!r.ok){reportFailure(r.message);render();return;}items=next;announce(`"${c?.name??"Candle"}" deleted.`);if(editingId===id)resetForm();render();}else{disarm();armDelete(id);}}
+  if(action==="delete"){if(armedId===id){disarm();const c=items.find(c=>c.id===id),next=items.filter(c=>c.id!==id),r=save(next);if(!r.ok){reportFailure(r.message);render();return;}items=next;announce(`"${c?.name??"Candle"}" deleted.`);if(editingId===id)resetForm();render();}else{disarm();armDelete(id);}}
   else if(action==="edit"){const c=items.find(c=>c.id===id);if(c){disarm();fillEdit(c);}}
   else if(action==="move"){const i=items.findIndex(c=>c.id===id);if(i===-1)return;const mv={...items[i],view:"shelf" as View},next=items.map((c,j)=>j===i?mv:c),r=save(next);if(!r.ok){reportFailure(r.message);return;}items=next;announce(`"${mv.name}" moved to your shelf.`);render();}
 }

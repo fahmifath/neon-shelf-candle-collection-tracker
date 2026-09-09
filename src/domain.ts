@@ -6,19 +6,17 @@ export interface Candle{id:string;name:string;brand:string;scentNotes:string;ves
 export interface CandleInput{name:string;brand:string;scentNotes:string;vesselStyle:string;burnStatus:string;rating:string|number|null;view:string;}
 export interface ValidationErrors{name?:string;brand?:string;scentNotes?:string;vesselStyle?:string;burnStatus?:string;view?:string;}
 export const NAME_MAX=80,BRAND_MAX=60,SCENT_MAX=120,VESSEL_MAX=80;
+function chk(v:string|undefined,req:boolean,max:number,lbl:string):string|undefined{
+  const s=(v??"").trim();
+  if(!s&&req)return lbl+" is required.";
+  return s.length>max?`${lbl} must be ${max} characters or fewer.`:undefined;
+}
 export function validate(input:CandleInput):ValidationErrors{
   const errors:ValidationErrors={};
-  const name=(input.name??"").trim();
-  if(!name)errors.name="Name is required.";
-  else if(name.length>NAME_MAX)errors.name=`Name must be ${NAME_MAX} characters or fewer.`;
-  const brand=(input.brand??"").trim();
-  if(!brand)errors.brand="Brand is required.";
-  else if(brand.length>BRAND_MAX)errors.brand=`Brand must be ${BRAND_MAX} characters or fewer.`;
-  const scent=(input.scentNotes??"").trim();
-  if(!scent)errors.scentNotes="Scent notes are required.";
-  else if(scent.length>SCENT_MAX)errors.scentNotes=`Scent notes must be ${SCENT_MAX} characters or fewer.`;
-  const vessel=(input.vesselStyle??"").trim();
-  if(vessel.length>VESSEL_MAX)errors.vesselStyle=`Vessel style must be ${VESSEL_MAX} characters or fewer.`;
+  const n=chk(input.name,true,NAME_MAX,"Name");if(n)errors.name=n;
+  const b=chk(input.brand,true,BRAND_MAX,"Brand");if(b)errors.brand=b;
+  const s=chk(input.scentNotes,true,SCENT_MAX,"Scent notes");if(s)errors.scentNotes=s;
+  const v=chk(input.vesselStyle,false,VESSEL_MAX,"Vessel style");if(v)errors.vesselStyle=v;
   if(!BURN_STATUSES.includes(input.burnStatus as BurnStatus))errors.burnStatus="Invalid burn status.";
   if(!VIEWS.includes(input.view as View))errors.view="Invalid view.";
   return errors;
@@ -49,10 +47,8 @@ export function createCandle(input:CandleInput,id:string,now:string):Candle{
 }
 export function normalize(raw:unknown):Candle|null{
   if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
-  const r=raw as Record<string,unknown>;
-  const input:CandleInput={name:typeof r.name==="string"?r.name:"",brand:typeof r.brand==="string"?r.brand:"",scentNotes:typeof r.scentNotes==="string"?r.scentNotes:"",vesselStyle:typeof r.vesselStyle==="string"?r.vesselStyle:"",burnStatus:typeof r.burnStatus==="string"?r.burnStatus:"",rating:r.rating!==undefined?(r.rating as string|number|null):null,view:typeof r.view==="string"?r.view:""};
-  if(hasErrors(validate(input)))return null;
-  const id=typeof r.id==="string"&&r.id?r.id:null;
-  if(!id)return null;
-  return createCandle(input,id,typeof r.createdAt==="string"?r.createdAt:new Date(0).toISOString());
+  const r=raw as Record<string,unknown>,str=(k:string)=>typeof r[k]==="string"?r[k] as string:"";
+  const input:CandleInput={name:str("name"),brand:str("brand"),scentNotes:str("scentNotes"),vesselStyle:str("vesselStyle"),burnStatus:str("burnStatus"),rating:r.rating!==undefined?(r.rating as string|number|null):null,view:str("view")};
+  if(hasErrors(validate(input))||typeof r.id!=="string"||!r.id)return null;
+  return createCandle(input,r.id,typeof r.createdAt==="string"?r.createdAt:new Date(0).toISOString());
 }

@@ -14,116 +14,38 @@
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="storage-banner" role="alert" aria-live="assertive" hidden></div>
 <div id="announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
 <header class="site-header">
-  <div class="header-inner">
-    <div class="brand">
-      <span aria-hidden="true" class="brand-flame">🕯</span>
-      <h1 class="brand-name">Neon Shelf</h1>
-    </div>
-    <div class="view-toggle" role="group" aria-label="Collection view">
-      <button id="btn-shelf" class="toggle-btn active" aria-pressed="true" data-view="shelf">My Shelf</button>
-      <button id="btn-wishlist" class="toggle-btn" aria-pressed="false" data-view="wishlist">Wish List</button>
-    </div>
-    <div class="stats-bar" aria-label="Collection summary">
-      <span class="stat"><span class="stat-value" id="stat-owned">0</span><span class="stat-label">owned</span></span>
-      <span class="stat-divider" aria-hidden="true">·</span>
-      <span class="stat"><span class="stat-value" id="stat-burned">0</span><span class="stat-label">burned</span></span>
-      <span class="stat-divider" aria-hidden="true">·</span>
-      <span class="stat"><span class="stat-value" id="stat-wishlist">0</span><span class="stat-label">wished</span></span>
-    </div>
-  </div>
+<div class="header-inner">
+<div class="brand"><span aria-hidden="true" class="brand-flame">🕯</span><h1 class="brand-name">Neon Shelf</h1></div>
+<div class="view-toggle" role="group" aria-label="Collection view"><button id="btn-shelf" class="toggle-btn active" aria-pressed="true" data-view="shelf">My Shelf</button><button id="btn-wishlist" class="toggle-btn" aria-pressed="false" data-view="wishlist">Wish List</button></div>
+<div class="stats-bar" aria-label="Collection summary"><span class="stat"><span class="stat-value" id="stat-owned">0</span><span class="stat-label">owned</span></span><span class="stat-divider" aria-hidden="true">·</span><span class="stat"><span class="stat-value" id="stat-burned">0</span><span class="stat-label">burned</span></span><span class="stat-divider" aria-hidden="true">·</span><span class="stat"><span class="stat-value" id="stat-wishlist">0</span><span class="stat-label">wished</span></span></div>
+</div>
 </header>
-
 <main id="main-content">
-  <div class="layout">
-    <aside class="form-panel" aria-label="Add candle form">
-      <h2 class="panel-title"><span aria-hidden="true">✦</span> Add a Candle</h2>
-      <form id="candle-form" novalidate>
-        <div class="field-group">
-          <label for="field-name">Name <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="field-name" name="name" placeholder="e.g. Fireside" maxlength="80" autocomplete="off" aria-required="true" aria-describedby="err-name"/>
-          <span id="err-name" class="field-error" role="alert" aria-live="assertive" hidden></span>
-        </div>
-        <div class="field-group">
-          <label for="field-brand">Brand <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="field-brand" name="brand" placeholder="e.g. Diptyque" maxlength="60" autocomplete="off" aria-required="true" aria-describedby="err-brand"/>
-          <span id="err-brand" class="field-error" role="alert" aria-live="assertive" hidden></span>
-        </div>
-        <div class="field-group">
-          <label for="field-scent">Scent Notes <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="field-scent" name="scentNotes" placeholder="e.g. cedar, vanilla, smoke" maxlength="120" autocomplete="off" aria-required="true" aria-describedby="err-scent"/>
-          <span id="err-scent" class="field-error" role="alert" aria-live="assertive" hidden></span>
-        </div>
-        <div class="field-group">
-          <label for="field-vessel">Vessel Style</label>
-          <input type="text" id="field-vessel" name="vesselStyle" placeholder="e.g. amber glass, matte black" maxlength="80" autocomplete="off" aria-describedby="err-vessel"/>
-          <span id="err-vessel" class="field-error" role="alert" aria-live="assertive" hidden></span>
-        </div>
-        <div class="field-group">
-          <label for="field-status">Burn Status</label>
-          <select id="field-status" name="burnStatus" aria-describedby="err-status">
-            <option value="unlit">🕯 Unlit</option>
-            <option value="burning">🔥 Burning</option>
-            <option value="finished">✦ Finished</option>
-          </select>
-          <span id="err-status" class="field-error" role="alert" aria-live="assertive" hidden></span>
-        </div>
-        <div class="field-group">
-          <label for="field-view">Add to</label>
-          <select id="field-view" name="view">
-            <option value="shelf">My Shelf</option>
-            <option value="wishlist">Wish List</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>Rating</label>
-          <div class="rating-input" id="rating-input-group" role="group" aria-label="Rating out of 5">
-            <button type="button" class="star-btn" data-value="1" aria-label="1 star" aria-pressed="false">★</button>
-            <button type="button" class="star-btn" data-value="2" aria-label="2 stars" aria-pressed="false">★</button>
-            <button type="button" class="star-btn" data-value="3" aria-label="3 stars" aria-pressed="false">★</button>
-            <button type="button" class="star-btn" data-value="4" aria-label="4 stars" aria-pressed="false">★</button>
-            <button type="button" class="star-btn" data-value="5" aria-label="5 stars" aria-pressed="false">★</button>
-          </div>
-          <input type="hidden" id="field-rating" name="rating" value=""/>
-        </div>
-        <div class="form-actions">
-          <button type="submit" id="btn-add" class="btn btn-primary">Add Candle</button>
-          <button type="button" id="btn-cancel-edit" class="btn btn-secondary" hidden>Cancel Edit</button>
-        </div>
-      </form>
-    </aside>
-
-    <section class="candle-section" aria-label="Candle collection">
-      <div class="section-controls">
-        <div class="search-group">
-          <label for="search-input" class="sr-only">Search candles</label>
-          <input type="search" id="search-input" placeholder="Search candles…" aria-label="Search candles" autocomplete="off"/>
-        </div>
-        <div class="filter-group">
-          <label for="filter-status" class="sr-only">Filter by burn status</label>
-          <select id="filter-status" aria-label="Filter by burn status">
-            <option value="">All statuses</option>
-            <option value="unlit">Unlit</option>
-            <option value="burning">Burning</option>
-            <option value="finished">Finished</option>
-          </select>
-        </div>
-      </div>
-      <div id="candle-grid" class="candle-grid" aria-label="Candle cards"></div>
-      <div id="empty-collection" class="empty-state" hidden>
-        <span class="empty-icon" aria-hidden="true">🕯</span>
-        <p class="empty-title">Your shelf is empty</p>
-        <p class="empty-body" id="empty-collection-body">Add your first candle to start building your collection.</p>
-      </div>
-      <div id="empty-filter" class="empty-state" hidden>
-        <span class="empty-icon" aria-hidden="true">🔍</span>
-        <p class="empty-title">No candles found</p>
-        <p class="empty-body" id="empty-filter-body">No matches for your search.</p>
-        <button type="button" id="btn-clear-filters" class="btn btn-secondary">Clear filters</button>
-      </div>
-    </section>
-  </div>
+<div class="layout">
+<aside class="form-panel" aria-label="Add candle form">
+<h2 class="panel-title"><span aria-hidden="true">✦</span> Add a Candle</h2>
+<form id="candle-form" novalidate>
+<div class="field-group"><label for="field-name">Name <span class="required" aria-hidden="true">*</span></label><input type="text" id="field-name" name="name" placeholder="e.g. Fireside" maxlength="80" autocomplete="off" aria-required="true" aria-describedby="err-name"/><span id="err-name" class="field-error" role="alert" aria-live="assertive" hidden></span></div>
+<div class="field-group"><label for="field-brand">Brand <span class="required" aria-hidden="true">*</span></label><input type="text" id="field-brand" name="brand" placeholder="e.g. Diptyque" maxlength="60" autocomplete="off" aria-required="true" aria-describedby="err-brand"/><span id="err-brand" class="field-error" role="alert" aria-live="assertive" hidden></span></div>
+<div class="field-group"><label for="field-scent">Scent Notes <span class="required" aria-hidden="true">*</span></label><input type="text" id="field-scent" name="scentNotes" placeholder="e.g. cedar, vanilla, smoke" maxlength="120" autocomplete="off" aria-required="true" aria-describedby="err-scent"/><span id="err-scent" class="field-error" role="alert" aria-live="assertive" hidden></span></div>
+<div class="field-group"><label for="field-vessel">Vessel Style</label><input type="text" id="field-vessel" name="vesselStyle" placeholder="e.g. amber glass, matte black" maxlength="80" autocomplete="off" aria-describedby="err-vessel"/><span id="err-vessel" class="field-error" role="alert" aria-live="assertive" hidden></span></div>
+<div class="field-group"><label for="field-status">Burn Status</label><select id="field-status" name="burnStatus" aria-describedby="err-status"><option value="unlit">🕯 Unlit</option><option value="burning">🔥 Burning</option><option value="finished">✦ Finished</option></select><span id="err-status" class="field-error" role="alert" aria-live="assertive" hidden></span></div>
+<div class="field-group"><label for="field-view">Add to</label><select id="field-view" name="view"><option value="shelf">My Shelf</option><option value="wishlist">Wish List</option></select></div>
+<div class="field-group"><label>Rating</label><div class="rating-input" id="rating-input-group" role="group" aria-label="Rating out of 5"><button type="button" class="star-btn" data-value="1" aria-label="1 star" aria-pressed="false">★</button><button type="button" class="star-btn" data-value="2" aria-label="2 stars" aria-pressed="false">★</button><button type="button" class="star-btn" data-value="3" aria-label="3 stars" aria-pressed="false">★</button><button type="button" class="star-btn" data-value="4" aria-label="4 stars" aria-pressed="false">★</button><button type="button" class="star-btn" data-value="5" aria-label="5 stars" aria-pressed="false">★</button></div><input type="hidden" id="field-rating" name="rating" value=""/></div>
+<div class="form-actions"><button type="submit" id="btn-add" class="btn btn-primary">Add Candle</button><button type="button" id="btn-cancel-edit" class="btn btn-secondary" hidden>Cancel Edit</button></div>
+</form>
+</aside>
+<section class="candle-section" aria-label="Candle collection">
+<div class="section-controls">
+<div class="search-group"><label for="search-input" class="sr-only">Search candles</label><input type="search" id="search-input" placeholder="Search candles…" aria-label="Search candles" autocomplete="off"/></div>
+<div class="filter-group"><label for="filter-status" class="sr-only">Filter by burn status</label><select id="filter-status" aria-label="Filter by burn status"><option value="">All statuses</option><option value="unlit">Unlit</option><option value="burning">Burning</option><option value="finished">Finished</option></select></div>
+</div>
+<div id="candle-grid" class="candle-grid" aria-label="Candle cards"></div>
+<div id="empty-collection" class="empty-state" hidden><span class="empty-icon" aria-hidden="true">🕯</span><p class="empty-title">Your shelf is empty</p><p class="empty-body" id="empty-collection-body">Add your first candle to start building your collection.</p></div>
+<div id="empty-filter" class="empty-state" hidden><span class="empty-icon" aria-hidden="true">🔍</span><p class="empty-title">No candles found</p><p class="empty-body" id="empty-filter-body">No matches for your search.</p><button type="button" id="btn-clear-filters" class="btn btn-secondary">Clear filters</button></div>
+</section>
+</div>
 </main>
 <script type="module" src="/src/app.ts"></script>
 </body>

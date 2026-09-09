@@ -1,7 +1,2 @@
-import { defineConfig } from "vite";
-
-export default defineConfig({
-  test: {
-    environment: "node",
-  },
-});
+import {defineConfig} from "vite";
+export default defineConfig({test:{globals:true,environment:"node"}});
